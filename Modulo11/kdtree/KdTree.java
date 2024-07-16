@@ -172,28 +172,65 @@ public class KdTree {
 
     public Point2D nearest(Point2D p){ // a nearest neighbor in the set to point p; null if the set is empty 
         verifyIfNull(p);
-        return p;
+        if(!this.isEmpty()){
+            RectHV rec = new RectHV(0, 0, 1, 1);
+            Node res = searchNearest(p, root, root, rec, 0);
+            return res.point;
+        }
+        return null;
+    }
+
+    private Node searchNearest(Point2D p, Node n, Node closest, RectHV rec, int level){
+        if(n == null){
+            return closest;
+        }
+
+        double dist = closest.point.distanceSquaredTo(p);
+
+        if(dist < rec.distanceSquaredTo(p) && !closest.point.equals(n.point)){
+            return closest;
+        }
+
+        if(n.point.distanceSquaredTo(p) < dist){
+            closest = n;
+        }
+
+        RectHV rR, rL;
+        if(level == 0 || level % 2 == 0){
+            rL = new RectHV(rec.xmin(), rec.ymin(), n.point.x(), rec.ymax());
+            rR = new RectHV(n.point.x(), rec.ymin(), rec.xmax(), rec.ymax());
+        }
+        else{
+            rL = new RectHV(rec.xmin(), rec.ymin(), rec.xmax(), n.point.y());
+            rR = new RectHV(rec.xmin(), n.point.y(), rec.xmax(), rec.ymax());
+        }
+
+        double distRL = rL.distanceSquaredTo(p), distRR = rR.distanceSquaredTo(p);
+        
+        if(distRL < distRR){
+            closest = searchNearest(p, n.left, closest, rL, level + 1);
+            closest = searchNearest(p, n.right, closest, rR, level + 1);
+        }
+        else{
+            closest = searchNearest(p, n.right, closest, rR, level + 1);
+            closest = searchNearest(p, n.left, closest, rL, level + 1);
+        }
+
+        return closest;
     }
  
     public static void main(String[] args){ // unit testing of the methods (optional) 
-        RectHV rect = new RectHV(0.0, 0.0, 1.0, 1.0);
-        StdDraw.enableDoubleBuffering();
-        KdTree kdtree = new KdTree();
-        while (true) {
-            if (StdDraw.isMousePressed()) {
-                double x = StdDraw.mouseX();
-                double y = StdDraw.mouseY();
-                StdOut.printf("%8.6f %8.6f\n", x, y);
-                Point2D p = new Point2D(x, y);
-                if (rect.contains(p)) {
-                    StdOut.printf("%8.6f %8.6f\n", x, y);
-                    kdtree.insert(p);
-                    StdDraw.clear();
-                    kdtree.draw();
-                    StdDraw.show();
-                }
-            }
-            StdDraw.pause(20);
-        }
+        KdTree k = new KdTree();
+        k.insert(new Point2D(0.4375, 0.0));
+        k.insert(new Point2D(0.625, 0.3125));
+        k.insert(new Point2D(0.9375, 0.0625));
+        k.insert(new Point2D(0.375, 0.9375));
+        k.insert(new Point2D(0.25, 0.375));
+        k.insert(new Point2D(0.5, 0.875));
+        k.insert(new Point2D(0.0625, 1.0));
+        k.insert(new Point2D(0.5625, 0.75));
+        k.insert(new Point2D(1.0, 0.8125));
+        k.insert(new Point2D(0.8125, 0.125));
+        StdOut.print(k.nearest(new Point2D(0.3125, 0.25)));
     }
  }
